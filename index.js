@@ -28,7 +28,20 @@ app.get('/', (req, res) => {
 
 // Add a new note
 app.post('/api/notes', (request, response, next) => {
-  const body = request.body;
+  const body = request.body
+
+  const note = new Note({
+    content: body.content,
+    important: body.important || false,
+  })
+
+  note.save()
+    .then(savedNote => {
+      response.json(savedNote)
+    })
+    .catch(error => next(error))
+
+  {/*const body = request.body;
 
   // Validate content
   if (!body.content) {
@@ -46,7 +59,9 @@ app.post('/api/notes', (request, response, next) => {
   Note
     .create(note)
     .then((savedNote) => response.json(savedNote))
-    .catch((error) => next(error));
+    .catch((error) => next(error));*/}
+
+
 });
 
 // Get all notes
@@ -76,12 +91,32 @@ app.delete('/api/notes/:id', (request, response, next) => {
     .catch((error) => next(error));
 });
 
+//Updating
+app.put('/api/notes/:id', (request, response, next) => {
+  const { content, important } = request.body
+
+  Note.findByIdAndUpdate(
+    request.params.id,
+    { content, important },
+    { new: true, runValidators: true, context: 'query' }
+  ).
+    then(updatedNote => {
+      response.json(updatedNote)
+    })
+    .catch(error => next(error))
+
+
+
+})
+
 // Error handling middleware
 const errorHandler = (error, request, response, next) => {
   console.error(error.message);
 
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' });
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message })
   }
 
   next(error);
